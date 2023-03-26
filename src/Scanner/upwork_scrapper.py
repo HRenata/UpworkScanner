@@ -7,18 +7,24 @@ from dotenv import dotenv_values
 from playwright.sync_api import sync_playwright
 
 from upwork_manager import UpworkManager
-from model import Job, Profile
+from model import Job, Profile, Address
 
 
 class UpworkScraper:
     def __init__(self, username: str, password: str, answer: str):
+        self.username: str = None
+
         self.jobs: List = []
-        self.profile_info: Profile = None
+        self.profile_info: List = []
+
         self.best_matches_content: BeautifulSoup = None
         self.profile_info_content: BeautifulSoup = None
+        self.extra_profile_info: str = None
+
 
         with sync_playwright() as pw:
             manager = UpworkManager(pw, username, password, answer)
+            self.username = manager.navigator.username
             try:
                 manager.login()
             except ValueError as e:
@@ -26,6 +32,7 @@ class UpworkScraper:
             else:
                 time.sleep(3)
                 self.best_matches_content = manager.get_best_matches_content()
+                self.extra_profile_info = manager.get_profile_extra_info()
                 self.profile_info_content = manager.get_profile_info_content()
             finally:
                 manager.close()
@@ -77,7 +84,64 @@ class UpworkScraper:
             self.jobs.append(job_obj.dict())
 
     def scrape_profile_info(self):
-        pass
+        if self.profile_info_content is None or self.extra_profile_info is None:
+            return
+
+        soup = BeautifulSoup(self.profile_info_content, 'html.parser')
+
+        address_street_span = soup.select_one('span[data-test="addressStreet"]')
+        address_street = address_street_span.text.strip() if address_street_span else ""
+
+        address_street2_span = soup.select_one('span[data-test="addressStreet2"]')
+        address_street2 = address_street2_span.text.strip() if address_street2_span else None
+
+        city_span = soup.select_one('span[data-test="addressCity"]')
+        city = city_span.text.strip() if city_span else ""
+
+        state_span = soup.select_one('span[data-test="addressState"]')
+        state = state_span.text.strip() if state_span else None
+
+        postal_code_span = soup.select_one('span[data-test="addressZip"]')
+        postal_code = postal_code_span.text.strip() if postal_code_span else None
+
+        country_span = soup.select_one('span[data-test="addressCountry"]')
+        country = country_span.text.strip() if country_span else ""
+
+        address = Address(line1=address_street, line2=address_street2, city=city, state=state,
+                          postal_code=postal_code, country=country)
+
+        user_id_div = soup.select_one('div[data-test="userId"]')
+        user_id = user_id_div.text.strip() if user_id_div else ""
+
+        account = self.extra_profile_info['profile']['identity']['uid']
+        created_at = self.extra_profile_info['person']['creationDate']
+        updated_at = self.extra_profile_info['person']['updatedOn']
+
+        full_name_div = soup.select_one('div[data-test="userName"]')
+        full_name = full_name_div.text.strip() if full_name_div else ""
+        full_name = " ".join(full_name.split())
+
+        first_name = self.extra_profile_info['person']['personName']['firstName']
+        last_name = full_name.replace(first_name, '').strip()
+
+        phone_number_div = soup.select_one('div[data-test="phone"]')
+        phone_number = phone_number_div.text.strip() if phone_number_div else ""
+        phone_number = phone_number.split()
+
+        if not self.username.find('@'):
+            hidden_email_div = soup.select_one('div[data-test="userEmail"]')
+            hidden_email = hidden_email_div.text.strip() if hidden_email_div else None
+            email = self.username + hidden_email.split('@')[1]
+        else:
+            email = self.username
+
+        picture_url = self.extra_profile_info['person']['photoUrl']
+
+        profile_info = Profile(id=user_id, account=account, created_at=created_at, updated_at=updated_at,
+                               first_name=first_name, last_name=last_name, full_name=full_name, email=email,
+                               phone_number=phone_number, picture_url=picture_url, address=address)
+
+        self.profile_info.append(profile_info.dict())
 
     def save_profile_info(self, file_path):
         with open(file_path, 'w') as f:
@@ -92,3 +156,6 @@ credentials = dotenv_values(".env")
 scrapper = UpworkScraper(credentials["USERNAME"], credentials["PASSWORD"], credentials["SECRET"])
 scrapper.scrape_jobs()
 scrapper.save_jobs('jobs.json')
+
+scrapper.scrape_profile_info()
+scrapper.save_profile_info('profile.json')
