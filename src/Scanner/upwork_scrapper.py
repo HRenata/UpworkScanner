@@ -6,7 +6,7 @@ from typing import List
 from dotenv import dotenv_values
 from playwright.sync_api import sync_playwright
 
-from upwork_login import UpworkLogin
+from upwork_manager import UpworkManager
 from model import Job
 
 
@@ -16,19 +16,22 @@ class UpworkScraper:
         self.best_matches_content: BeautifulSoup = None
 
         with sync_playwright() as pw:
-            login = UpworkLogin(pw, username, password, answer)
+            manager = UpworkManager(pw, username, password, answer)
             try:
-                login.login()
+                manager.login()
             except ValueError as e:
                 print(e)
             else:
                 time.sleep(3)
-                self.best_matches_content = login.get_best_matches_content()
-                self.contact_info_content = login.get_contact_info_content()
+                self.best_matches_content = manager.get_best_matches_content()
+                #self.contact_info_content = login.get_contact_info_content()
             finally:
-                login.close()
+                manager.close()
 
     def scrape_jobs(self):
+        if self.best_matches_content is None:
+            return
+
         soup = BeautifulSoup(self.best_matches_content, 'html.parser')
         best_matches_jobs = soup.select('div[data-test="job-tile-list"]')
 
