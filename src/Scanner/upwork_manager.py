@@ -6,34 +6,38 @@ from page_navigator import PageNavigator
 
 class UpworkManager:
     def __init__(self, pw: Playwright, username: str, password: str, answer: str):
-        self.pw: Playwright = pw
-        self.browser: Browser = self.pw.chromium.launch(headless=False, slow_mo=100)
-        self.navigator: PageNavigator = PageNavigator(self.browser, username, password, answer)
+        self.__pw: Playwright = pw
+        self.__browser: Browser = self.__pw.chromium.launch(headless=False, slow_mo=100)
+        self.__navigator: PageNavigator = PageNavigator(self.__browser, username, password, answer)
 
-    def login(self):
-        self.navigator.goto_login_page()
-        self.navigator.enter_username()
-        self.navigator.enter_password()
-        self.navigator.enter_answer()
-        self.navigator.ignore_protection_of_account()
-        self.navigator.close_complete_profile()
+    @property
+    def navigator(self) -> PageNavigator:
+        return self.__navigator
 
-    def get_best_matches_content(self):
-        self.navigator.goto_best_matches_page()
-        self.navigator.close_complete_profile()
+    def login(self) -> None:
+        self.__navigator.goto_login_page()
+        self.__navigator.enter_username()
+        self.__navigator.enter_password()
+        self.__navigator.enter_answer()
+        self.__navigator.ignore_protection_of_account()
+        self.__navigator.close_complete_profile()
 
-        return self.navigator.get_page_content()
+    def get_best_matches_content(self) -> str:
+        self.__navigator.goto_best_matches_page()
+        self.__navigator.close_complete_profile()
 
-    def get_profile_info_content(self):
-        self.navigator.goto_profile_info_page()
-        self.navigator.reenter_password()
-        self.navigator.reenter_answer()
+        return self.__navigator.get_page_content()
+
+    def get_profile_info_content(self) -> str:
+        self.__navigator.goto_profile_info_page()
+        self.__navigator.reenter_password()
+        self.__navigator.reenter_answer()
         time.sleep(5)
-        return self.navigator.get_page_content()
+        return self.__navigator.get_page_content()
 
-    def get_profile_extra_info(self):
-        self.navigator.goto_profile_extra_info_page()
-        return self.navigator.user_profile
+    def get_profile_extra_info(self) -> str:
+        self.__navigator.goto_profile_extra_info_page()
+        return self.__navigator.user_profile
 
-    def close(self):
-        self.browser.close()
+    def close(self) -> None:
+        self.__browser.close()
