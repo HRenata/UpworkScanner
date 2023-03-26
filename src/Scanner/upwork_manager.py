@@ -139,7 +139,7 @@ class UpworkManager:
 
         return self.navigator.get_page_content()
 
-    def get_contact_info_content(self):
+    def get_profile_info_content(self):
         self.navigator.goto_contact_info_page()
         time.sleep(3)
 

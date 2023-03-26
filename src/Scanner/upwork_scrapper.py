@@ -7,13 +7,15 @@ from dotenv import dotenv_values
 from playwright.sync_api import sync_playwright
 
 from upwork_manager import UpworkManager
-from model import Job
+from model import Job, Profile
 
 
 class UpworkScraper:
     def __init__(self, username: str, password: str, answer: str):
         self.jobs: List = []
+        self.profile_info: Profile = None
         self.best_matches_content: BeautifulSoup = None
+        self.profile_info_content: BeautifulSoup = None
 
         with sync_playwright() as pw:
             manager = UpworkManager(pw, username, password, answer)
@@ -24,7 +26,7 @@ class UpworkScraper:
             else:
                 time.sleep(3)
                 self.best_matches_content = manager.get_best_matches_content()
-                #self.contact_info_content = login.get_contact_info_content()
+                self.profile_info_content = manager.get_profile_info_content()
             finally:
                 manager.close()
 
@@ -73,6 +75,13 @@ class UpworkScraper:
                           client_rating=client_rating, payment_verified=payment_verified,
                           client_spending=client_spending, proposals=proposals)
             self.jobs.append(job_obj.dict())
+
+    def scrape_profile_info(self):
+        pass
+
+    def save_profile_info(self, file_path):
+        with open(file_path, 'w') as f:
+            json.dump(self.profile_info, f, indent=4)
 
     def save_jobs(self, file_path):
         with open(file_path, 'w') as f:
