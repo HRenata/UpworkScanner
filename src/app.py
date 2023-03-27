@@ -1,10 +1,10 @@
 from dotenv import dotenv_values
 
-from upwork_scrapper import UpworkScraper
+from Scanner.upwork_scrapper import UpworkScraper
 
 
 if __name__ == "__main__":
-    credentials = dotenv_values(".env")
+    credentials = dotenv_values("../../.env")
     scrapper = UpworkScraper(
         credentials["USERNAME"],
         credentials["PASSWORD"],

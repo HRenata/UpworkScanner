@@ -2,7 +2,7 @@ from typing import Any
 
 from playwright.sync_api import Playwright, Browser
 
-from page_navigator import PageNavigator
+from Scanner.page_navigator import PageNavigator
 
 
 class UpworkManager:

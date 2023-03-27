@@ -5,8 +5,8 @@ from typing import List
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 
-from upwork_manager import UpworkManager
-from model import Job, Profile, Address
+from Scanner.upwork_manager import UpworkManager
+from Scanner.model import Job, Profile, Address
 
 
 class UpworkScraper:

@@ -1,4 +1,5 @@
 import json
+import time
 from typing import Optional
 
 from playwright.sync_api import Browser, Page
@@ -65,6 +66,7 @@ class PageNavigator:
             return
 
         try:
+            time.sleep(3)
             self.__goto_page(self.__best_matches_url)
             self.__check_page_correctness(
                 'h2:has-text("Jobs you might like")',
