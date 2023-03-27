@@ -8,7 +8,8 @@ if __name__ == "__main__":
     scrapper = UpworkScraper(
         credentials["USERNAME"],
         credentials["PASSWORD"],
-        credentials["SECRET"])
+        credentials["SECRET"]
+    )
 
     scrapper.scrape_jobs()
     scrapper.save_jobs('jobs.json')

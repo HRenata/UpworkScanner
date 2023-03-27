@@ -1,176 +1,141 @@
-import json
+from typing import Any, List
 import time
-from typing import List
+import json
 
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 
-from Scanner.upwork_manager import UpworkManager
 from Scanner.model import Job, Profile, Address
+from Scanner.upwork_manager import UpworkManager
 
 
 class UpworkScraper:
     def __init__(self, username: str, password: str, answer: str):
-        self.__username: str
+        self.username: str
 
-        self.__jobs: List = []
-        self.__profile_info: dict = {}
+        self.jobs: List = []
+        self.profile_info: dict = {}
 
-        self.__best_matches_content: BeautifulSoup
-        self.__profile_info_content: BeautifulSoup
-        self.__extra_profile_info: str = ""
+        self.best_matches_content: BeautifulSoup = None
+        self.profile_info_content: BeautifulSoup = None
+        self.extra_profile_info: str = ""
 
         with sync_playwright() as pw:
             manager = UpworkManager(pw, username, password, answer)
-            self.__username = manager.navigator.username
+            self.username = manager.navigator.username
             try:
                 manager.login()
             except ValueError as e:
                 print(e)
             else:
                 time.sleep(3)
-                self.__best_matches_content = manager.get_best_matches_content()
-                self.__extra_profile_info = manager.get_profile_extra_info()
-                self.__profile_info_content = manager.get_profile_info_content()
+                self.best_matches_content = manager.get_best_matches_content()
+                self.extra_profile_info = manager.get_profile_extra_info()
+                self.profile_info_content = manager.get_profile_info_content()
             finally:
                 manager.close()
 
+    def _get_element_from_html(self, soup: BeautifulSoup,
+                               selector: str, default_value: Any) -> Any:
+        el_selector = soup.select_one(selector)
+        return el_selector.text.strip() if el_selector else default_value
+
     def scrape_jobs(self) -> None:
-        if self.__best_matches_content is None:
+        if self.best_matches_content is None:
             return
 
-        soup = BeautifulSoup(self.__best_matches_content, 'html.parser')
+        soup = BeautifulSoup(self.best_matches_content, 'html.parser')
         best_matches_jobs = soup.select('div[data-test="job-tile-list"]')
 
         for job in best_matches_jobs:
-            title_h = job.select_one('h3.job-tile-title')
-            title = title_h.text.strip() if title_h else ""
+            title = self._get_element_from_html(job, 'h3.job-tile-title', "")
 
             url_h = job.select_one('h3.job-tile-title a')
             url = ('https://www.upwork.com/' + url_h['href']) if url_h else ""
 
-            description_span = soup.select_one(
-                'span[data-test="job-description-text"]')
-            description = description_span.text.strip() if description_span else ""
-
-            job_type_strong = soup.select_one('strong[data-test="job-type"]')
-            job_type = job_type_strong.text.strip() if job_type_strong else ""
-
-            time_posted_span = soup.select_one('span[data-test="posted-on"]')
-            time_posted = time_posted_span.text.strip() if time_posted_span else ""
-
-            tier_span = soup.select_one('span[data-test="contractor-tier"]')
-            tier = tier_span.text.strip() if tier_span else ""
-
-            est_time_span = soup.select_one('span[data-test="duration"]')
-            est_time = est_time_span.text.strip() if est_time_span else None
-
-            budget_span = soup.select_one('span[data-test="budget"]')
-            budget = budget_span.text.strip() if budget_span else None
+            description = self._get_element_from_html(job, 'span[data-test="job-description-text"]', "")
+            job_type = self._get_element_from_html(job, 'strong[data-test="job-type"]', "")
+            time_posted = self._get_element_from_html(job, 'span[data-test="posted-on"]', "")
+            tier = self._get_element_from_html(job, 'span[data-test="contractor-tier"]', "")
+            est_time = self._get_element_from_html(job, 'span[data-test="duration"]', None)
+            budget = self._get_element_from_html(job, 'span[data-test="budget"]', None)
 
             skills = []
-            skills_wrapper_div = soup.select_one(
-                'div[class="up-skill-wrapper"]')
-            skills_wrapper = skills_wrapper_div.select(
-                'a') if skills_wrapper_div else []
+            skills_wrapper_div = soup.select_one('div[class="up-skill-wrapper"]')
+            skills_wrapper = skills_wrapper_div.select('a') if skills_wrapper_div else []
             for skill in skills_wrapper:
                 skills.append(skill.text.strip())
 
-            client_country_span = soup.select_one(
-                'small[data-test="client-country"]')
-            client_country = client_country_span.text.strip() if client_country_span else ""
+            client_country = self._get_element_from_html(job, 'small[data-test="client-country"]', "")
 
-            rating_div = soup.select_one('div[class="up-rating-background"]')
+            rating_div = job.select_one('div[class="up-rating-background"]')
             rating_span = rating_div.select_one(
                 'span[class="sr-only"]') if rating_div else ""
             client_rating = float(
                 rating_span.text.strip().split(' ')[2]) if rating_span else 0
 
-            verification_small = soup.select_one(
-                'small[data-test="payment-verification-status"]')
-            verification_strong = verification_small.select_one('strong[class="text-muted"]') \
-                if verification_small else ""
-            verification = verification_strong.text.strip() if verification_strong else ""
+            verification_small = soup.select_one('small[data-test="payment-verification-status"]')
+            verification = self._get_element_from_html(
+                verification_small, 'strong[class="text-muted"]', "")
             payment_verified = verification == 'Payment verified'
 
-            client_spending_small = soup.select_one(
-                'small[data-test="client-spendings"]')
-            client_spending = client_spending_small.text.strip() if client_spending_small else ""
-
-            proposals_strong = soup.select_one('strong[data-test="proposals"]')
-            proposals = proposals_strong.text.strip() if proposals_strong else ""
+            client_spending = self._get_element_from_html(job, 'small[data-test="client-spendings"]', "")
+            proposals = self._get_element_from_html(job, 'strong[data-test="proposals"]', "")
 
             job_obj = Job(title=title, url=url, description=description, job_type=job_type, time_posted=time_posted,
                           tier=tier, est_time=est_time, budget=budget, skills=skills, client_country=client_country,
                           client_rating=client_rating, payment_verified=payment_verified,
                           client_spending=client_spending, proposals=proposals)
-            self.__jobs.append(job_obj.dict())
+            self.jobs.append(job_obj.dict())
 
     def scrape_profile_info(self) -> None:
-        if self.__profile_info_content is None or self.__extra_profile_info is None:
+        if self.profile_info_content is None or self.extra_profile_info is None:
             return
 
-        soup = BeautifulSoup(self.__profile_info_content, 'html.parser')
+        soup = BeautifulSoup(self.profile_info_content, 'html.parser')
 
-        address_street_span = soup.select_one(
-            'span[data-test="addressStreet"]')
-        address_street = address_street_span.text.strip() if address_street_span else ""
-
-        address_street2_span = soup.select_one(
-            'span[data-test="addressStreet2"]')
-        address_street2 = address_street2_span.text.strip() if address_street2_span else None
-
-        city_span = soup.select_one('span[data-test="addressCity"]')
-        city = city_span.text.strip() if city_span else ""
-
-        state_span = soup.select_one('span[data-test="addressState"]')
-        state = state_span.text.strip() if state_span else None
-
-        postal_code_span = soup.select_one('span[data-test="addressZip"]')
-        postal_code = postal_code_span.text.strip() if postal_code_span else None
-
-        country_span = soup.select_one('span[data-test="addressCountry"]')
-        country = country_span.text.strip() if country_span else ""
+        address_street = self._get_element_from_html(soup, 'span[data-test="addressStreet"]', "")
+        address_street2 = self._get_element_from_html(soup, 'span[data-test="addressStreet2"]', "")
+        city = self._get_element_from_html(soup, 'span[data-test="addressCity"]', "")
+        state = self._get_element_from_html(soup, 'span[data-test="addressState"]', None)
+        postal_code = self._get_element_from_html(soup, 'span[data-test="addressZip"]', None)
+        country = self._get_element_from_html(soup, 'span[data-test="addressCountry"]', "")
 
         address = Address(line1=address_street, line2=address_street2, city=city, state=state,
                           postal_code=postal_code, country=country)
 
-        user_id_div = soup.select_one('div[data-test="userId"]')
-        user_id = user_id_div.text.strip() if user_id_div else ""
+        user_id = self._get_element_from_html(soup, 'div[data-test="userId"]', "")
 
-        account = self.__extra_profile_info['profile']['identity']['uid']
-        created_at = self.__extra_profile_info['person']['creationDate']
-        updated_at = self.__extra_profile_info['person']['updatedOn']
+        account = self.extra_profile_info['profile']['identity']['uid']
+        created_at = self.extra_profile_info['person']['creationDate']
+        updated_at = self.extra_profile_info['person']['updatedOn']
 
-        full_name_div = soup.select_one('div[data-test="userName"]')
-        full_name = full_name_div.text.strip() if full_name_div else ""
+        full_name = self._get_element_from_html(soup, 'div[data-test="userName"]', "")
         full_name = " ".join(full_name.split())
 
-        first_name = self.__extra_profile_info['person']['personName']['firstName']
+        first_name = self.extra_profile_info['person']['personName']['firstName']
         last_name = full_name.replace(first_name, '').strip()
 
-        phone_number_div = soup.select_one('div[data-test="phone"]')
-        phone_number = phone_number_div.text.strip() if phone_number_div else ""
+        phone_number = self._get_element_from_html(soup, 'div[data-test="phone"]', "")
         phone_number = "".join(phone_number.split())
 
-        if not self.__username.find('@'):
-            hidden_email_div = soup.select_one('div[data-test="userEmail"]')
-            hidden_email = hidden_email_div.text.strip() if hidden_email_div else None
-            email = self.__username + hidden_email.split('@')[1] if hidden_email else self.__username
+        if not self.username.find('@'):
+            hidden_email = self._get_element_from_html(soup, 'div[data-test="userEmail"]', None)
+            email = self.username + hidden_email.split('@')[1] if hidden_email else self.username
         else:
-            email = self.__username
+            email = self.username
 
-        picture_url = self.__extra_profile_info['person']['photoUrl']
+        picture_url = self.extra_profile_info['person']['photoUrl']
 
-        self.__profile_info = Profile(id=user_id, account=account, created_at=created_at,
+        self.profile_info = Profile(id=user_id, account=account, created_at=created_at,
                                       updated_at=updated_at, first_name=first_name, last_name=last_name,
                                       full_name=full_name, email=email, phone_number=phone_number,
                                       picture_url=picture_url, address=address).dict()
 
     def save_profile_info(self, file_path: str) -> None:
         with open(file_path, 'w') as f:
-            json.dump(self.__profile_info, f, indent=4)
+            json.dump(self.profile_info, f, indent=4)
 
     def save_jobs(self, file_path: str) -> None:
         with open(file_path, 'w') as f:
-            json.dump(self.__jobs, f, indent=4)
+            json.dump(self.jobs, f, indent=4)
