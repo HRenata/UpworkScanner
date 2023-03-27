@@ -156,7 +156,7 @@ class UpworkScraper:
         if not self.__username.find('@'):
             hidden_email_div = soup.select_one('div[data-test="userEmail"]')
             hidden_email = hidden_email_div.text.strip() if hidden_email_div else None
-            email = self.__username + hidden_email.split('@')[1]
+            email = self.__username + hidden_email.split('@')[1] if hidden_email else self.__username
         else:
             email = self.__username
 
@@ -167,10 +167,10 @@ class UpworkScraper:
                                       full_name=full_name, email=email, phone_number=phone_number,
                                       picture_url=picture_url, address=address).dict()
 
-    def save_profile_info(self, file_path) -> None:
+    def save_profile_info(self, file_path: str) -> None:
         with open(file_path, 'w') as f:
             json.dump(self.__profile_info, f, indent=4)
 
-    def save_jobs(self, file_path) -> None:
+    def save_jobs(self, file_path: str) -> None:
         with open(file_path, 'w') as f:
             json.dump(self.__jobs, f, indent=4)
