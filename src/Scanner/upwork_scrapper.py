@@ -11,14 +11,14 @@ from model import Job, Profile, Address
 
 class UpworkScraper:
     def __init__(self, username: str, password: str, answer: str):
-        self.__username: str = None
+        self.__username: str
 
         self.__jobs: List = []
-        self.__profile_info: dict = None
+        self.__profile_info: dict = {}
 
-        self.__best_matches_content: BeautifulSoup = None
-        self.__profile_info_content: BeautifulSoup = None
-        self.__extra_profile_info: str = None
+        self.__best_matches_content: BeautifulSoup
+        self.__profile_info_content: BeautifulSoup
+        self.__extra_profile_info: str
 
         with sync_playwright() as pw:
             manager = UpworkManager(pw, username, password, answer)
@@ -152,9 +152,10 @@ class UpworkScraper:
 
         picture_url = self.__extra_profile_info['person']['photoUrl']
 
-        self.__profile_info = Profile(id=user_id, account=account, created_at=created_at, updated_at=updated_at,
-                                      first_name=first_name, last_name=last_name, full_name=full_name, email=email,
-                                      phone_number=phone_number, picture_url=picture_url, address=address).dict()
+        self.__profile_info = Profile(id=user_id, account=account, created_at=created_at,
+                                      updated_at=updated_at, first_name=first_name, last_name=last_name,
+                                      full_name=full_name, email=email, phone_number=phone_number,
+                                      picture_url=picture_url, address=address).dict()
 
     def save_profile_info(self, file_path) -> None:
         with open(file_path, 'w') as f:

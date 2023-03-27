@@ -1,16 +1,16 @@
 import json
-import time
 
 from playwright.sync_api import Browser, Page
 from bs4 import BeautifulSoup
+from typing import Optional
 
 
 class PageNavigator:
     def __init__(self, browser: Browser, username: str, password: str, answer: str):
         self.__page: Page = browser.new_page()
 
-        self.__user_id: str = None
-        self.__user_profile: str = None
+        self.__user_id: str
+        self.__user_profile: str
 
         self.__username: str = username
         self.__password: str = password
@@ -38,7 +38,7 @@ class PageNavigator:
         self.__is_next_step_available = True
         try:
             self.__page.goto(page_url)
-            time.sleep(2)
+            self.__page.wait_for_timeout(3)
         except:
             self.__is_next_step_available = False
             raise ValueError("Can't connect to the page " + page_url)
@@ -188,11 +188,12 @@ class PageNavigator:
         if selector_element:
             self.__page.click('text=Close')
 
-    def get_page_content(self) -> str:
+    def get_page_content(self) -> Optional[str]:
+        self.__page.wait_for_timeout(3)
         return self.__page.content() if self.__logged_in else None
 
-    def get_user_id(self) -> str:
+    def get_user_id(self) -> Optional[str]:
         return self.__user_id if self.__logged_in else None
 
-    def get_user_profile(self) -> str:
+    def get_user_profile(self) -> Optional[str]:
         return self.__user_profile if self.__logged_in else None
