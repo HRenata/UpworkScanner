@@ -1,8 +1,8 @@
 import json
+from typing import Optional
 
 from playwright.sync_api import Browser, Page
 from bs4 import BeautifulSoup
-from typing import Optional
 
 
 class PageNavigator:

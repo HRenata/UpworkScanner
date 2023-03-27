@@ -1,8 +1,8 @@
 import json
 import time
+from typing import List
 
 from bs4 import BeautifulSoup
-from typing import List
 from playwright.sync_api import sync_playwright
 
 from upwork_manager import UpworkManager
