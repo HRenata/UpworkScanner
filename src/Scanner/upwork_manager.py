@@ -4,10 +4,13 @@ from page_navigator import PageNavigator
 
 
 class UpworkManager:
-    def __init__(self, pw: Playwright, username: str, password: str, answer: str):
+    def __init__(self, pw: Playwright, username: str,
+                 password: str, answer: str):
         self.__pw: Playwright = pw
-        self.__browser: Browser = self.__pw.chromium.launch(headless=False, slow_mo=100)
-        self.__navigator: PageNavigator = PageNavigator(self.__browser, username, password, answer)
+        self.__browser: Browser = self.__pw.chromium.launch(
+            headless=False, slow_mo=100)
+        self.__navigator: PageNavigator = PageNavigator(
+            self.__browser, username, password, answer)
 
     @property
     def navigator(self) -> PageNavigator:

@@ -18,7 +18,7 @@ class UpworkScraper:
 
         self.__best_matches_content: BeautifulSoup
         self.__profile_info_content: BeautifulSoup
-        self.__extra_profile_info: str
+        self.__extra_profile_info: str = ""
 
         with sync_playwright() as pw:
             manager = UpworkManager(pw, username, password, answer)
@@ -49,7 +49,8 @@ class UpworkScraper:
             url_h = job.select_one('h3.job-tile-title a')
             url = ('https://www.upwork.com/' + url_h['href']) if url_h else ""
 
-            description_span = soup.select_one('span[data-test="job-description-text"]')
+            description_span = soup.select_one(
+                'span[data-test="job-description-text"]')
             description = description_span.text.strip() if description_span else ""
 
             job_type_strong = soup.select_one('strong[data-test="job-type"]')
@@ -68,25 +69,32 @@ class UpworkScraper:
             budget = budget_span.text.strip() if budget_span else None
 
             skills = []
-            skills_wrapper_div = soup.select_one('div[class="up-skill-wrapper"]')
-            skills_wrapper = skills_wrapper_div.select('a') if skills_wrapper_div else []
+            skills_wrapper_div = soup.select_one(
+                'div[class="up-skill-wrapper"]')
+            skills_wrapper = skills_wrapper_div.select(
+                'a') if skills_wrapper_div else []
             for skill in skills_wrapper:
                 skills.append(skill.text.strip())
 
-            client_country_span = soup.select_one('small[data-test="client-country"]')
+            client_country_span = soup.select_one(
+                'small[data-test="client-country"]')
             client_country = client_country_span.text.strip() if client_country_span else ""
 
             rating_div = soup.select_one('div[class="up-rating-background"]')
-            rating_span = rating_div.select_one('span[class="sr-only"]') if rating_div else ""
-            client_rating = float(rating_span.text.strip().split(' ')[2]) if rating_span else 0
+            rating_span = rating_div.select_one(
+                'span[class="sr-only"]') if rating_div else ""
+            client_rating = float(
+                rating_span.text.strip().split(' ')[2]) if rating_span else 0
 
-            verification_small = soup.select_one('small[data-test="payment-verification-status"]')
+            verification_small = soup.select_one(
+                'small[data-test="payment-verification-status"]')
             verification_strong = verification_small.select_one('strong[class="text-muted"]') \
                 if verification_small else ""
             verification = verification_strong.text.strip() if verification_strong else ""
             payment_verified = verification == 'Payment verified'
 
-            client_spending_small = soup.select_one('small[data-test="client-spendings"]')
+            client_spending_small = soup.select_one(
+                'small[data-test="client-spendings"]')
             client_spending = client_spending_small.text.strip() if client_spending_small else ""
 
             proposals_strong = soup.select_one('strong[data-test="proposals"]')
@@ -104,10 +112,12 @@ class UpworkScraper:
 
         soup = BeautifulSoup(self.__profile_info_content, 'html.parser')
 
-        address_street_span = soup.select_one('span[data-test="addressStreet"]')
+        address_street_span = soup.select_one(
+            'span[data-test="addressStreet"]')
         address_street = address_street_span.text.strip() if address_street_span else ""
 
-        address_street2_span = soup.select_one('span[data-test="addressStreet2"]')
+        address_street2_span = soup.select_one(
+            'span[data-test="addressStreet2"]')
         address_street2 = address_street2_span.text.strip() if address_street2_span else None
 
         city_span = soup.select_one('span[data-test="addressCity"]')
