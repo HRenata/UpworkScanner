@@ -128,9 +128,9 @@ class UpworkScraper:
         picture_url = self.extra_profile_info['person']['photoUrl']
 
         self.profile_info = Profile(id=user_id, account=account, created_at=created_at,
-                                      updated_at=updated_at, first_name=first_name, last_name=last_name,
-                                      full_name=full_name, email=email, phone_number=phone_number,
-                                      picture_url=picture_url, address=address).dict()
+                                    updated_at=updated_at, first_name=first_name, last_name=last_name,
+                                    full_name=full_name, email=email, phone_number=phone_number,
+                                    picture_url=picture_url, address=address).dict()
 
     def save_profile_info(self, file_path: str) -> None:
         with open(file_path, 'w') as f:

@@ -1,3 +1,4 @@
+import time
 from typing import Any
 
 from playwright.sync_api import Playwright, Browser
@@ -31,6 +32,7 @@ class UpworkManager:
         self.navigator.goto_profile_info_page()
         self.navigator.reenter_password()
         self.navigator.reenter_answer()
+        time.sleep(3)
 
         return self.navigator.get_page_content()
 
